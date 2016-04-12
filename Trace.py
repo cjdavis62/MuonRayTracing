@@ -63,6 +63,10 @@ def generate_muon():
     phi_values = phi_data[:,0]
     phi_probabilities = phi_data[:,1]
 
+    #print sum(theta_probabilities)
+    #print sum(phi_probabilities)
+
+
     # Generate theta from distribution
     theta = np.random.choice(theta_values, p = theta_probabilities)
     
