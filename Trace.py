@@ -2,8 +2,8 @@
 
 #####################################################
 #    Written by: Christopher Davis and Ivy Wanta    #
-#    Version: 0.0.1                                 #
-#    11 April 2016                                  #
+#    Version: 0.0.2                                 #
+#    12 April 2016                                  #
 #    christopher.davis@yale.edu                     #
 #####################################################
 
@@ -12,12 +12,17 @@
 
 
 import os
+import math
 import numpy as np
 import random
 
 
 global muon_plane_starting_z
 muon_plane_starting_z = 10 # height of muon plane in meters
+
+global muon_bottom_z
+muon_bottom_z = -10
+
 global muon_plane_Xwidth
 muon_plane_Xwidth = 20 # width of muon plane in meters
 global muon_plane_Ywidth
@@ -78,10 +83,56 @@ def generate_muon():
 
 
 # "Draw" a line given a muon's theta phi. Note: Maybe this function is unnecessary? Might use up too much memory, but may save computation time
-def propagate_muon():
-    # save the x,y,z of the muon as it passes down through the cryostat. Then use this array in the check() functions
-    pass
+def propagate_muon(mu):
 
+    x = mu.x
+    y = mu.y
+    z = mu.z
+
+    print "Starting at (%.2f, %.2f, %.2f) at theta = %.2f degrees and phi = %.2f degrees)" %(x, y, z, mu.theta, mu.phi)
+
+
+    # convert to radians
+    theta = mu.theta * math.pi / 180.0
+    phi = mu.phi * math.pi / 180.0
+
+
+    # Solve for new displacements in x,y,z from spherical coordinates
+    # x = r sin(theta) cos(phi)
+    # y = r sin(theta) sin(phi)
+    # z = r cos(theta)
+
+    # start with a "delta_z" of 0.01 m, might need to use 0.001 m later
+    delta_z = 0.01
+
+    # initialize array of (x,y,z) coordinates
+    travel = [(x,y,z)]
+
+    print "Starting propagation..."
+    while (True):
+
+        # Use delta_r as "time-step" for other variables
+        x = z + (delta_z / math.cos(theta)) * math.sin(theta) * math.cos(phi)
+        y = y + (delta_z / math.cos(theta)) * math.sin(theta) * math.sin(phi)
+        z = z + delta_z
+
+        #print "muon at point (%.2f, %.2f, %.2f)" %(x, y, z)
+
+        # save the x,y,z of the muon as it passes down through the cryostat. Then use this array in the check() functions
+        travel.append((x,y,z))
+      
+        # check to see if the muon goes out of the range (xmin, xmax, ymin, ymax, zmin)
+        if (math.fabs(x) > muon_plane_Xwidth or math.fabs(y) > muon_plane_Ywidth or z < muon_bottom_z):
+            print "Reached the end of the muon tracking region:"
+            print "muon at point (%.2f, %.2f, %.2f)" %(x, y, z)
+            break
+        
+        # print out some points along the way
+        if (z.is_integer()):
+                print "At point(%.2f, %.2f, %.2f) now. Continuing" %(x, y, z)
+
+
+    return travel
 
 # Check if passes through paddles
 def paddle_check():
@@ -113,9 +164,11 @@ def lead_check():
 def Output():
     pass
 
-test_muon = generate_muon()
-print test_muon.x
-print test_muon.y
-print test_muon.z
-print test_muon.theta
-print test_muon.phi
+mu = generate_muon()
+print mu.x
+print mu.y
+print mu.z
+print mu.theta
+print mu.phi
+
+Points = propagate_muon(mu)
