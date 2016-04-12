@@ -18,10 +18,10 @@ import random
 
 
 global muon_plane_starting_z
-muon_plane_starting_z = 10 # height of muon plane in meters
+muon_plane_starting_z = 10.0 # height of muon plane in meters
 
 global muon_bottom_z
-muon_bottom_z = -10
+muon_bottom_z = -10.0
 
 global muon_plane_Xwidth
 muon_plane_Xwidth = 20 # width of muon plane in meters
@@ -34,7 +34,6 @@ global theta_filename
 theta_filename="Theta_Macro_tab_delim.txt"
 global phi_filename
 phi_filename="Phi_Macro_tab_delim.txt"
-
 
 
 # Create muon class
@@ -103,18 +102,19 @@ def propagate_muon(mu):
     # z = r cos(theta)
 
     # start with a "delta_z" of 0.01 m, might need to use 0.001 m later
-    delta_z = 0.01
+    delta_z = 0.001 # 1 mm step size
 
     # initialize array of (x,y,z) coordinates
     travel = [(x,y,z)]
 
     print "Starting propagation..."
-    while (True):
 
+    i = 1
+    while (True):
         # Use delta_r as "time-step" for other variables
-        x = z + (delta_z / math.cos(theta)) * math.sin(theta) * math.cos(phi)
+        x = x + (delta_z / math.cos(theta)) * math.sin(theta) * math.cos(phi)
         y = y + (delta_z / math.cos(theta)) * math.sin(theta) * math.sin(phi)
-        z = z + delta_z
+        z = z - delta_z
 
         #print "muon at point (%.2f, %.2f, %.2f)" %(x, y, z)
 
@@ -122,24 +122,33 @@ def propagate_muon(mu):
         travel.append((x,y,z))
       
         # check to see if the muon goes out of the range (xmin, xmax, ymin, ymax, zmin)
-        if (math.fabs(x) > muon_plane_Xwidth or math.fabs(y) > muon_plane_Ywidth or z < muon_bottom_z):
-            print "Reached the end of the muon tracking region:"
-            print "muon at point (%.2f, %.2f, %.2f)" %(x, y, z)
+        if (math.fabs(x) >= muon_plane_Xwidth or math.fabs(y) >= muon_plane_Ywidth or z <= muon_bottom_z):
             break
-        
-        # print out some points along the way
-        if (z.is_integer()):
-                print "At point(%.2f, %.2f, %.2f) now. Continuing" %(x, y, z)
-
 
     return travel
 
-# Check if passes through paddles
-def paddle_check():
+def panel_check(travel):
 
-    # Get geometry of paddles
+    # generate test panel geometry
+    muon_panel_Zwidth = 0.03  # 3 cm width
+    muon_panel_Xwidth = 4 #4 m
+    muon_panel_Ywidth = 4
+    muon_panel_Xcenter = 0 # Start at (0,0,0)
+    muon_panel_Ycenter = 0
+    muon_panel_Zcenter = 0
+    
+    # For each z layer in panel, check to see if mu passes through
+    for (x,y,z) in travel:
+        if (z > (muon_panel_Zcenter - muon_panel_Zwidth) and z < (muon_panel_Zcenter + muon_panel_Zwidth)):
+            if (x > (muon_panel_Xcenter - muon_panel_Xwidth) and x < (muon_panel_Zcenter + muon_panel_Zwidth) and y > (muon_panel_Ycenter - muon_panel_Ywidth) and y < (muon_panel_Ycenter + muon_panel_Ywidth)):
+                return 1
+            else:
+                continue
+        if (z < (muon_panel_Zcenter - muon_panel_Zwidth)):
+            return 0
 
-    pass
+    # return 1 if hit
+    # return 0 if no hit
 
 # Check if passes through detectors
 def detector_check():
@@ -147,6 +156,10 @@ def detector_check():
     # Get geometry of detectors
     
     # First model as a bunch of rectangular prisms
+
+    # return 1 if hit
+    # return 0 if no hit
+
 
     pass
 
@@ -156,6 +169,9 @@ def lead_check():
     # Get geometry of lead shielding
     
     # First model as a thin walled hollow cylinder
+    
+    # return 1 if hit
+    # return 0 if no hit
     pass
 
 
@@ -164,11 +180,15 @@ def lead_check():
 def Output():
     pass
 
-mu = generate_muon()
-print mu.x
-print mu.y
-print mu.z
-print mu.theta
-print mu.phi
 
-Points = propagate_muon(mu)
+while True:
+    mu = generate_muon()
+
+    Points = propagate_muon(mu)
+    
+    test = panel_check(Points)
+
+    print test
+    
+    if (test):
+        break
