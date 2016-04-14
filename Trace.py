@@ -2,8 +2,8 @@
 
 #####################################################
 #    Written by: Christopher Davis and Ivy Wanta    #
-#    Version: 0.0.2                                 #
-#    12 April 2016                                  #
+#    Version: 0.1.0                                 #
+#    13 April 2016                                  #
 #    christopher.davis@yale.edu                     #
 #####################################################
 
@@ -18,7 +18,7 @@ import random
 
 
 global muon_plane_starting_z
-muon_plane_starting_z = 10.0 # height of muon plane in meters
+muon_plane_starting_z = 0.5 # height of muon plane in meters
 
 global muon_bottom_z
 muon_bottom_z = -10.0
@@ -88,7 +88,7 @@ def propagate_muon(mu):
     y = mu.y
     z = mu.z
 
-    print "Starting at (%.2f, %.2f, %.2f) at theta = %.2f degrees and phi = %.2f degrees)" %(x, y, z, mu.theta, mu.phi)
+#    print "Starting at (%.2f, %.2f, %.2f) at theta = %.2f degrees and phi = %.2f degrees)" %(x, y, z, mu.theta, mu.phi)
 
 
     # convert to radians
@@ -107,7 +107,7 @@ def propagate_muon(mu):
     # initialize array of (x,y,z) coordinates
     travel = [(x,y,z)]
 
-    print "Starting propagation..."
+    #print "Starting propagation..."
 
     i = 1
     while (True):
@@ -131,64 +131,149 @@ def panel_check(travel):
 
     # generate test panel geometry
     muon_panel_Zwidth = 0.03  # 3 cm width
-    muon_panel_Xwidth = 4 #4 m
-    muon_panel_Ywidth = 4
-    muon_panel_Xcenter = 0 # Start at (0,0,0)
-    muon_panel_Ycenter = 0
-    muon_panel_Zcenter = 0
+    muon_panel_Xwidth = 4.0 #4 m
+    muon_panel_Ywidth = 4.0
+    muon_panel_Xcenter = 0.0 # Start at (0,0,0)
+    muon_panel_Ycenter = 0.0
+    muon_panel_Zcenter = 0.0
+
+    # Check if muon makes it to the panel
+    (x,y,z) = travel.pop()
+    if (z >= muon_panel_Zcenter + muon_panel_Zwidth/2):
+        return 0
+    else:
+        travel.append((x,y,z))
     
     # For each z layer in panel, check to see if mu passes through
     for (x,y,z) in travel:
-        if (z > (muon_panel_Zcenter - muon_panel_Zwidth) and z < (muon_panel_Zcenter + muon_panel_Zwidth)):
-            if (x > (muon_panel_Xcenter - muon_panel_Xwidth) and x < (muon_panel_Zcenter + muon_panel_Zwidth) and y > (muon_panel_Ycenter - muon_panel_Ywidth) and y < (muon_panel_Ycenter + muon_panel_Ywidth)):
+        if (z >= (muon_panel_Zcenter - muon_panel_Zwidth/2) and z <= (muon_panel_Zcenter + muon_panel_Zwidth/2)):
+            if (x >= (muon_panel_Xcenter - muon_panel_Xwidth/2) and x <= (muon_panel_Zcenter + muon_panel_Zwidth/2) and y >= (muon_panel_Ycenter - muon_panel_Ywidth/2) and y <= (muon_panel_Ycenter + muon_panel_Ywidth/2)):
                 return 1
             else:
                 continue
-        if (z < (muon_panel_Zcenter - muon_panel_Zwidth)):
+        if (z <= (muon_panel_Zcenter - muon_panel_Zwidth/2)):
             return 0
-
+    return 0
     # return 1 if hit
     # return 0 if no hit
 
 # Check if passes through detectors
-def detector_check():
+def detector_check(travel):
 
     # Get geometry of detectors
     
-    # First model as a bunch of rectangular prisms
+    # First model as a box
+    detector_box_Zwidth = 0.8  # 80 cm width
+    detector_box_Xwidth = 1.0 #1 m width
+    detector_box_Ywidth = 1.0
+    detector_box_Xcenter = 0.0 # Start at (0,0,-4)
+    detector_box_Ycenter = 0.0
+    detector_box_Zcenter = -4.0
 
-    # return 1 if hit
-    # return 0 if no hit
+    # Check if muon makes it to the detectors
+    (x,y,z) = travel.pop()
+    if (z >= detector_box_Zcenter + detector_box_Zwidth/2):
+        return 0
+    else:
+        travel.append((x,y,z))
 
+    
+    # For each z layer in panel, check to see if mu passes through
+    for (x,y,z) in travel:
+        if (z >= (detector_box_Zcenter - detector_box_Zwidth/2) and z <= (detector_box_Zcenter + detector_box_Zwidth/2)):
+            if (x >= (detector_box_Xcenter - detector_box_Xwidth/2) and x <= (detector_box_Xcenter + detector_box_Xwidth/2) and y >= (detector_box_Ycenter - detector_box_Ywidth/2) and y <= (detector_box_Ycenter + detector_box_Ywidth/2)):
+                return 1
 
-    pass
+        if (z <= (detector_box_Zcenter - detector_box_Zwidth/2)):
+            return 0
+    return 0
+
 
 # Check if passes through lead shield
-def lead_check():
+def lead_check(travel):
 
     # Get geometry of lead shielding
     
     # First model as a thin walled hollow cylinder
     
-    # return 1 if hit
-    # return 0 if no hit
-    pass
+    # cylinder part
+    lead_cylinder_innerDiameter = 3.0 #3 meter diameter
+    lead_cylinder_outerDiameter = 3.2 # 20 cm width
+    lead_cylinder_height = 2.5 # 2.5 meter height
+    lead_cylinder_cap = 0.2 # 10 cm height of the bottom cap
+    
+    lead_cylinder_Rcenter = 0 # centered at r = 0
+    lead_cylinder_Zbottom = -5 # 20 cm below bottom of detector box
 
+
+    # Check if muon makes it to the lead
+    (x,y,z) = travel.pop()
+    if (z >= lead_cylinder_Zbottom + lead_cylinder_height):
+        return 0
+    else:
+        travel.append((x,y,z))
+
+    for (x,y,z) in travel:
+        # Check if muon goes through the cylinder's sides
+        if (z >= lead_cylinder_Zbottom and z <= (lead_cylinder_Zbottom + lead_cylinder_height)):
+            if ((x*x + y*y) <= lead_cylinder_outerDiameter and (x*x + y*y) >= lead_cylinder_innerDiameter): 
+                return 1
+
+        # Check if muon goes through the bottom cap
+        if (z >= lead_cylinder_Zbottom and z<= (lead_cylinder_Zbottom + lead_cylinder_cap)):
+            if ((x*x + y*y) <= lead_cylinder_outerDiameter):
+                return 1
+
+        # Check if muon goes past the bottom
+        if (z <= lead_cylinder_Zbottom):
+            return 0
+
+    # Return 0 if the muon goes out of the World Volume
+    return 0
 
 
 # Output Ratios
 def Output():
     pass
 
+paddles = 0
+detectors = 0
+lead = 0
+paddles_detectors = 0
+paddles_lead = 0
+detectors_lead = 0
+paddles_detectors_lead = 0
 
+i = 1
+print "*" * 80
 while True:
     mu = generate_muon()
 
     Points = propagate_muon(mu)
     
-    test = panel_check(Points)
+    test1 = panel_check(Points)
+    test2 = detector_check(Points)
+    test3 = lead_check(Points)
 
-    print test
-    
-    if (test):
-        break
+    paddles = paddles + test1
+    detectors = detectors + test2
+    lead = lead + test3
+
+    paddles_detectors = paddles_detectors + (test1 * test2)
+    paddles_lead = paddles_lead + (test1 * test3)
+    detectors_lead = detectors_lead + (test2 * test3)
+    paddles_detectors_lead = paddles_detectors_lead + (test1 * test2 * test3)
+
+    #print "iteration: %s \t paddles: %s \t detectors: %s" %(i, paddles, detectors)
+    #print "paddles: %s \t detectors: %s" %(test1, test2)
+
+    i = i + 1
+
+    if (i % 1000 == 0):
+        print "iteration: %s \t paddles: %s \t detectors: %s \t lead: %s" %(i, paddles, detectors, lead)
+        print "pad + det: %s \t pad + lead: %s \t det + lead: %s \t pad + det + lead: %s" %(paddles_detectors, paddles_lead, detectors_lead, paddles_detectors_lead)
+        print "*" * 80
+
+
+#    if (test2 and test1):
+#        break
