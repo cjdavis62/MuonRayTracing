@@ -16,9 +16,8 @@ import math
 import numpy as np
 import random
 
-
 global muon_plane_starting_z
-muon_plane_starting_z = 0.5 # height of muon plane in meters
+muon_plane_starting_z = -2 # height of muon plane in meters
 
 global muon_bottom_z
 muon_bottom_z = -10.0
@@ -56,7 +55,6 @@ def generate_muon():
     y = random.uniform(-muon_plane_Ywidth/2, muon_plane_Ywidth/2)
     z = muon_plane_starting_z
 
-
     # Load theta distribution
     theta_data = np.loadtxt(theta_filename, delimiter = "\t", dtype = float)
     theta_values = theta_data[:,0]
@@ -67,10 +65,6 @@ def generate_muon():
     phi_values = phi_data[:,0]
     phi_probabilities = phi_data[:,1]
 
-    #print sum(theta_probabilities)
-    #print sum(phi_probabilities)
-
-
     # Generate theta from distribution
     theta = np.random.choice(theta_values, p = theta_probabilities)
     
@@ -80,7 +74,6 @@ def generate_muon():
     generated_muon = muon(x, y, z, theta, phi)
     return generated_muon
 
-
 # "Draw" a line given a muon's theta phi. Note: Maybe this function is unnecessary? Might use up too much memory, but may save computation time
 def propagate_muon(mu):
 
@@ -88,13 +81,9 @@ def propagate_muon(mu):
     y = mu.y
     z = mu.z
 
-#    print "Starting at (%.2f, %.2f, %.2f) at theta = %.2f degrees and phi = %.2f degrees)" %(x, y, z, mu.theta, mu.phi)
-
-
     # convert to radians
     theta = mu.theta * math.pi / 180.0
     phi = mu.phi * math.pi / 180.0
-
 
     # Solve for new displacements in x,y,z from spherical coordinates
     # x = r sin(theta) cos(phi)
@@ -107,16 +96,12 @@ def propagate_muon(mu):
     # initialize array of (x,y,z) coordinates
     travel = [(x,y,z)]
 
-    #print "Starting propagation..."
-
     i = 1
     while (True):
         # Use delta_r as "time-step" for other variables
         x = x + (delta_z / math.cos(theta)) * math.sin(theta) * math.cos(phi)
         y = y + (delta_z / math.cos(theta)) * math.sin(theta) * math.sin(phi)
         z = z - delta_z
-
-        #print "muon at point (%.2f, %.2f, %.2f)" %(x, y, z)
 
         # save the x,y,z of the muon as it passes down through the cryostat. Then use this array in the check() functions
         travel.append((x,y,z))
@@ -129,6 +114,31 @@ def propagate_muon(mu):
 
 def panel_check(travel):
 
+    # panels around the lead (.5 m away)
+
+    muon_paddle_cylinder_innerDiameter = 4.0
+    muon_paddle_cylinder_outerDiameter = 4.03
+    muon_paddle_cylinder_height = 2.0 # 2 meter height
+    muon_paddle_cylinder_Rcenter = 0
+    muon_paddle_cylinder_Zbottom = -5
+
+    (x,y,z) = travel.pop()
+    if (z >= muon_paddle_cylinder_Zbottom + muon_paddle_cylinder_height):
+        return 0
+    else:
+        travel.append((x,y,z))
+
+    for (x,y,z) in travel:
+        if (z >= muon_paddle_cylinder_Zbottom and z <= (muon_paddle_cylinder_Zbottom + muon_paddle_cylinder_height)):
+            if ((x*x + y*y) >= muon_paddle_cylinder_innerDiameter and (x*x + y*y) <= muon_paddle_cylinder_outerDiameter):
+                return 1
+            
+        if (z < muon_paddle_cylinder_Zbottom):
+            return 0
+    
+    return 0
+
+"""
     # generate test panel geometry
     muon_panel_Zwidth = 0.03  # 3 cm width
     muon_panel_Xwidth = 4.0 #4 m
@@ -156,12 +166,12 @@ def panel_check(travel):
     return 0
     # return 1 if hit
     # return 0 if no hit
-
+"""
 # Check if passes through detectors
 def detector_check(travel):
 
+
     # Get geometry of detectors
-    
     # First model as a box
     detector_box_Zwidth = 0.8  # 80 cm width
     detector_box_Xwidth = 1.0 #1 m width
@@ -188,7 +198,6 @@ def detector_check(travel):
             return 0
     return 0
 
-
 # Check if passes through lead shield
 def lead_check(travel):
 
@@ -203,7 +212,7 @@ def lead_check(travel):
     lead_cylinder_cap = 0.2 # 10 cm height of the bottom cap
     
     lead_cylinder_Rcenter = 0 # centered at r = 0
-    lead_cylinder_Zbottom = -5 # 20 cm below bottom of detector box
+    lead_cylinder_Zbottom = -5 # 60 cm below bottom of detector box
 
 
     # Check if muon makes it to the lead
