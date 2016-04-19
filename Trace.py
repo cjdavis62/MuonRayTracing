@@ -116,11 +116,11 @@ def panel_check(travel):
 
     # panels around the lead (.5 m away)
 
-    muon_paddle_cylinder_innerDiameter = 4.0
-    muon_paddle_cylinder_outerDiameter = 4.03
+    muon_paddle_cylinder_innerDiameter = 1.50
+    muon_paddle_cylinder_outerDiameter = 1.53
     muon_paddle_cylinder_height = 2.0 # 2 meter height
     muon_paddle_cylinder_Rcenter = 0
-    muon_paddle_cylinder_Zbottom = -5
+    muon_paddle_cylinder_Zbottom = -4.4 - 0.550
 
     (x,y,z) = travel.pop()
     if (z >= muon_paddle_cylinder_Zbottom + muon_paddle_cylinder_height):
@@ -194,13 +194,71 @@ def detector_check(travel):
             if (x >= (detector_box_Xcenter - detector_box_Xwidth/2) and x <= (detector_box_Xcenter + detector_box_Xwidth/2) and y >= (detector_box_Ycenter - detector_box_Ywidth/2) and y <= (detector_box_Ycenter + detector_box_Ywidth/2)):
                 return 1
 
-        if (z <= (detector_box_Zcenter - detector_box_Zwidth/2)):
+        elif (z < (detector_box_Zcenter - detector_box_Zwidth/2)):
             return 0
     return 0
 
 # Check if passes through lead shield
 def lead_check(travel):
 
+    
+    # Get geometry of lead shielding
+    
+    ### Used MC to get geometry ###
+    ### Lead shielding is an octogon ###
+
+    # Lead shield is formed by intersection of two boxes with length R to create an octogon. Hollowed out by second intersection of two boxes
+    lead_shield_ext_box = 1.1 
+    lead_shield_int_box = 0.85
+
+    lead_shield_height = 1.64
+    # height of bottom part of lead
+    lead_shield_bottom = 0.2
+
+    # Distance from bottom of lead shield to bottom of detectors
+    lead_shield_startZ = -4.4 - 0.550 
+
+    ### begin checks if inside lead ###
+     
+    # check to see if muon reaches lead
+
+    (x,y,z) = travel.pop()
+    if (z > lead_shield_bottom + lead_shield_height + lead_shield_startZ):
+        return 0
+    else:
+        travel.append((x,y,z))    
+
+    # check to see if muon passes through "hollow" part of lead shield
+    # octagon relations
+    # check if inside outer layer
+
+    for (x,y,z) in travel:
+
+        if ((z <= lead_shield_bottom + lead_shield_height + lead_shield_startZ) and (z > lead_shield_bottom + lead_shield_startZ)):
+
+            if ((y <= lead_shield_ext_box) and (y >= -lead_shield_ext_box) and (x <= lead_shield_ext_box) and (x >= -lead_shield_ext_box) and ((x + y) <= lead_shield_ext_box) and ((x - y) <= lead_shield_ext_box) and ((x + y) >= -lead_shield_ext_box) and ((x - y) >= -lead_shield_ext_box)):
+
+                # now check if outside inner layer
+                if not ((y <= lead_shield_int_box) and (y >= -lead_shield_int_box) and (x <= lead_shield_int_box) and (x >= -lead_shield_int_box) and ((x + y) <= lead_shield_int_box) and ((x - y) <= lead_shield_int_box) and ((x + y) >= -lead_shield_int_box) and ((x - y) >= -lead_shield_int_box)):
+
+                    return 1
+                
+        # same check for the bottom part of the lead
+        elif ((z <= lead_shield_bottom + lead_shield_startZ) and (z > lead_shield_bottom)):
+
+            if ((y <= lead_shield_ext_box) and (y >= -lead_shield_ext_box) and (x <= lead_shield_ext_box) and (x >= -lead_shield_ext_box) and ((x + y) <= lead_shield_ext_box) and ((x - y) <= lead_shield_ext_box) and ((x + y) >= -lead_shield_ext_box) and ((x - y) >= -lead_shield_ext_box)):
+
+                return 1
+
+        # stop sooner if muon goes beyond the bottom w/o hitting lead
+        elif (z <= lead_shield_bottom + lead_shield_startZ):
+
+            return 0
+
+
+    return 0
+
+"""
     # Get geometry of lead shielding
     
     # First model as a thin walled hollow cylinder
@@ -239,7 +297,7 @@ def lead_check(travel):
 
     # Return 0 if the muon goes out of the World Volume
     return 0
-
+"""
 
 # Output Ratios
 def Output():
