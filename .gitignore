@@ -8,3 +8,6 @@ Muon_Distribution.png
 Trace.py~
 Theta_Macro_2.txt
 *.xlsx
+convertTextToRoot.C~
+Trace_output.dat
+Trace_output.root

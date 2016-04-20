@@ -34,6 +34,8 @@ theta_filename="Theta_Macro_tab_delim.txt"
 global phi_filename
 phi_filename="Phi_Macro_tab_delim.txt"
 
+global output_file # .dat file to convert to ROOT later
+output_file = "Trace_output.dat"
 
 # Create muon class
 class muon:
@@ -312,9 +314,17 @@ detectors_lead = 0
 paddles_detectors_lead = 0
 
 i = 1
+
+# open file to write .dat output to
+dat = open(output_file, 'w')
+
 print "*" * 80
-while True:
+while i <= 50000:
     mu = generate_muon()
+
+    # write mu x,y,z,theta,phi to file
+    dat.write("%s\t%s\t%s\t%s\t%s\n" %(mu.x, mu.y, mu.z, mu.theta, mu.phi))
+
 
     Points = propagate_muon(mu)
     
