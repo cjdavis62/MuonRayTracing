@@ -23,7 +23,9 @@ void convertTextToRoot() {
 //   TCanvas *c = new TCanvas("c","Muon path 3D",0,0,600,400);
 // make two 2d graphs (x,y), (y,z) to see the pathways instead of 3d
    TGraph *g = new TGraph(50000);
-   
+   TGraph *h = new TGraph(50000);
+   //TCanvas *c1;
+   //TCanvas *c2;
 
    while (1) {
      in >> x >> y >> z;
@@ -37,6 +39,7 @@ void convertTextToRoot() {
      //cout << phi << endl;
      }
      g->SetPoint(nlines,x,y);
+     h->SetPoint(nlines,y,z);
      ntuple->Fill(x, y, z);
      nlines++;
    }
@@ -47,6 +50,9 @@ void convertTextToRoot() {
    f->Write();
 // gStyle->SetPalette(1);
    g->Draw("AL");
-   g->SetTitle(TString::Format("Muon Paths"));
+   g->SetTitle(TString::Format("Muon Paths X vs. Y"));
+   TCanvas *c2;
+   h->Draw("c2");
+   h->SetTitle(TString::Format("Muon Paths Y vs. Z"));
    return;
 }
