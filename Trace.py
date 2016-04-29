@@ -18,17 +18,17 @@ import numpy as np
 import random
 
 global muon_plane_starting_z
-muon_plane_starting_z = -2 # height of muon plane in meters
+muon_plane_starting_z = 0.5 # height of muon plane in meters
 
 global muon_bottom_z
 muon_bottom_z = -10.0
 
 global muon_plane_Xwidth
-muon_plane_Xwidth = 20 # width of muon plane in meters
+muon_plane_Xwidth = 25 # width of muon plane in meters
 global muon_plane_Ywidth
-muon_plane_Ywidth = 20 # width of muon plane in meters
+muon_plane_Ywidth = 25 # width of muon plane in meters
 global N_muons
-N_muons = 1e6 # number of muons to generate
+N_muons = 1e4 # number of muons to generate
 
 global theta_filename
 theta_filename="Theta_Macro_tab_delim.txt"
@@ -37,11 +37,6 @@ phi_filename="Phi_Macro_tab_delim.txt"
 
 global output_file # .dat file to convert to ROOT later
 output_file = "Trace_output.dat"
-
-global drawing_file # .dat file to convert to ROOT later
-drawing_file = "Trace_drawing.dat"
-
-
 
 # Create muon class
 class muon:
@@ -102,18 +97,7 @@ def propagate_muon(mu):
     delta_z = 0.001 # 1 mm step size
 
     # initialize array of (x,y,z) coordinates
-    # global travel    
     travel = [(x,y,z)]
-
-    # initialize hit arrays 
-    # global hitPaddles
-    # hitPaddles = [(x,y,z)]
-
-    # global hitDetector
-    # hitDetector = [(x,y,z)]
-
-    # global hitLead
-    # hitLead = [(x,y,z)]
 
     i = 1
     while (True):
@@ -133,6 +117,8 @@ def propagate_muon(mu):
 
 def panel_check(travel):
 
+
+    """
     # panels around the lead (.5 m away)
 
     muon_paddle_cylinder_innerDiameter = 1.50
@@ -151,17 +137,13 @@ def panel_check(travel):
         if (z >= muon_paddle_cylinder_Zbottom and z <= (muon_paddle_cylinder_Zbottom + muon_paddle_cylinder_height)):
             if ((x*x + y*y) >= muon_paddle_cylinder_innerDiameter and (x*x + y*y) <= muon_paddle_cylinder_outerDiameter):
                 return 1
-		#tempPaddles.append((x,y,z))
-		#hitPaddles = travel
-#		#hitPaddles.append((x,y,z))
-		#draw.write("%s\t%s\t%s" %(x ,y ,z))
 
         if (z < muon_paddle_cylinder_Zbottom):
             return 0
     
     return 0
 
-"""
+    """
     # generate test panel geometry
     muon_panel_Zwidth = 0.03  # 3 cm width
     muon_panel_Xwidth = 4.0 #4 m
@@ -189,7 +171,9 @@ def panel_check(travel):
     return 0
     # return 1 if hit
     # return 0 if no hit
-"""
+
+
+
 # Check if passes through detectors
 def detector_check(travel):
 
@@ -216,9 +200,6 @@ def detector_check(travel):
         if (z >= (detector_box_Zcenter - detector_box_Zwidth/2) and z <= (detector_box_Zcenter + detector_box_Zwidth/2)):
             if (x >= (detector_box_Xcenter - detector_box_Xwidth/2) and x <= (detector_box_Xcenter + detector_box_Xwidth/2) and y >= (detector_box_Ycenter - detector_box_Ywidth/2) and y <= (detector_box_Ycenter + detector_box_Ywidth/2)):
                 return 1
-		#draw.write("%s\t%s\t%s" %(x ,y ,z))
-		#hitDetector.append((x,y,z))
-		#hitDetector = travel
 
         elif (z < (detector_box_Zcenter - detector_box_Zwidth/2)):
             return 0
@@ -273,8 +254,7 @@ def lead_check(travel):
         elif ((z <= lead_shield_bottom + lead_shield_startZ) and (z > lead_shield_bottom)):
 
             if ((y <= lead_shield_ext_box) and (y >= -lead_shield_ext_box) and (x <= lead_shield_ext_box) and (x >= -lead_shield_ext_box) and ((x + y) <= lead_shield_ext_box) and ((x - y) <= lead_shield_ext_box) and ((x + y) >= -lead_shield_ext_box) and ((x - y) >= -lead_shield_ext_box)):
-		#hitLead.append(x,y,z)
-		#draw.write("%s\t%s\t%s" %(x ,y ,z))
+
                 return 1
 		#hitLead = travel
 
@@ -347,10 +327,12 @@ muon_detector = 0
 
 # open file to write .dat output to
 dat = open(output_file, 'w')
-draw = open(drawing_file, 'w')
+draw_pad = open("Trace_drawing_paddle.dat", 'w')
+draw_lead = open("Trace_drawing_lead.dat", 'w')
+draw_det = open("Trace_drawing_detector.dat", 'w')
 
 print "*" * 80
-while i <= 50000:
+while i <= N_muons:
     mu = generate_muon()
 
     # write mu x,y,z,theta,phi to file
@@ -364,6 +346,21 @@ while i <= 50000:
     detectorTest = detector_check(Points)
     leadTest = lead_check(Points)
 
+    if panelTest:
+        for (x,y,z) in Points:
+            draw_pad.write("%s\t%s\t%s\n" %(x ,y ,z))
+
+
+    if detectorTest:
+        for (x,y,z) in Points:
+            draw_det.write("%s\t%s\t%s\n" %(x ,y ,z))
+
+
+    if leadTest:
+        for (x,y,z) in Points:
+            draw_lead.write("%s\t%s\t%s\n" %(x ,y ,z))
+
+
     paddles = paddles + panelTest
     detectors = detectors + detectorTest
     lead = lead + leadTest
@@ -373,8 +370,6 @@ while i <= 50000:
     detectors_lead = detectors_lead + (detectorTest * leadTest)
     paddles_detectors_lead = paddles_detectors_lead + (panelTest * detectorTest * leadTest)
 
-    #print "iteration: %s \t paddles: %s \t detectors: %s" %(i, paddles, detectors)
-    #print "paddles: %s \t detectors: %s" %(test1, test2)
 
     i = i + 1
 
@@ -384,24 +379,3 @@ while i <= 50000:
         print "*" * 80
 
 
-    if panelTest == 1 & muon_panel == 0:
-	for (x,y,z) in Points:
-		draw.write("%s\t%s\t%s" %(x ,y ,z))
-		muon_panel = 1
-
-    if detectorTest == 1 & muon_detector == 0:
-    	for (x,y,z) in Points:
-		draw.write("%s\t%s\t%s" %(x ,y ,z))
-		muon_detector = 1
-
-    if leadTest == 1 & muon_lead == 0:
-    	for (x,y,z) in Points:
-		draw.write("%s\t%s\t%s" %(x ,y ,z))
-		muon_lead = 1
-
-
-
-#    if (test2 and test1):
-
-
-#        break
